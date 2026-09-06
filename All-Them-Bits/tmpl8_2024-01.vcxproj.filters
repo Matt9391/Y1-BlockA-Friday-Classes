@@ -24,6 +24,7 @@
       <Filter>template</Filter>
     </ClCompile>
     <ClCompile Include="FirstAssignment.cpp" />
+    <ClCompile Include="SecondAssignment.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game.h" />

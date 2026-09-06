@@ -72,7 +72,7 @@ void Surface::Clear( uint c )
 void Surface::Plot( int x, int y, uint c )
 {
 	if (x < 0 || y < 0 || x >= width || y >= height) return;
-	pixels[x + y * width] = c;
+	pixels[x + y * width] |= c;	
 }
 
 void Surface::Box( int x1, int y1, int x2, int y2, uint c )

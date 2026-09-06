@@ -8,110 +8,136 @@
 // -----------------------------------------------------------
 // Friday Class 04/09/2026
 // 
-////Try this:
-//	Surface s("assets/nc2tiles.png");
-//	s.CopyTo(screen, 0, 0);
-//	This time:
-//	Easy:
-//		Remove green and blue from the image.
-//	Intermediate:
-//		Keep only red for pixel 0, only green for
-//		pixel 1, only blue for pixel 2, repeat.
-//	Hard:
-//		load a second image and smoothly
-//		cross - fade between the two.
+//ALL TOGETHER NOW - ~1 HOUR ASSIGNMENT
+//Create an application where sand drops from the top of the screen(e.g.
+//	from a random position).Sand can be red, green or blue.Behaviour:
+//Red: down if no ‘red’ below, diagonally down if no red in that direction.
+//Green and blue : same as red.Or : Harder : (only)blue can move horizontally
+//until blocked(so : it keeps its direction until blocked or dropping).
+//Red and green will ‘stack’.Blue(when doing the ‘harder’ part) will form a
+//puddle.
+//Red, green and blue sand can occupy the same pixel.They only look for
+//their own colour.Their colours can thus blend.
+//Updating a particle : 1. Remove from current pixel; 2. Update position; 3. Place at new pixel.
+//All done ? Make the particle struct as small as possible.Harder : Test if it
+//can be faster when not as small as possible.
 // -----------------------------------------------------------
+
+struct Particle {
+	int x, y;
+	uint clr;
+	bool alive;
+
+	Particle(int x, int y, int clrNum) {
+		this->x = x;
+		this->y = y;
+		this->alive = true;
+		switch (clrNum)
+		{
+			case 0:
+				this->clr = 0xFFff0000;
+				break;
+			case 1:
+				this->clr = 0xFF00ff00;
+				break;
+			case 2:
+				this->clr = 0xFF0000ff;
+				break;
+		default:
+			break;
+		}
+	}
+};
 
 void Game::Init()
 {
 
 }
 
-float brightness = 0.f;
-float brightness2 = 1.f;
-float dir = 1.f;
+std::vector<Particle> particles;
 
 // -----------------------------------------------------------
 // Main application tick function - Executed once per frame
 // -----------------------------------------------------------
-void Game::Tick( float /* deltaTime */ )
+void Game::Tick(float /* deltaTime */)
 {
-	// Easy assignment
+	screen->Clear(0xFF000000);
+	//particles.push_back(Particle(rand() % screen->width, 0, rand() % 3));
+	particles.push_back(Particle(200, 0, 2));
+	particles.push_back(Particle(300, 0, 1));
+	particles.push_back(Particle(250, 0, 0));
+	particles.push_back(Particle(180, 50, 2));
 
-	//Surface s("assets/nc2tiles.png");
-	//
-	//for (int i = 0, y = 0; y < s.height; y++) {
-	//	for (int x = 0; x < s.width; x++, i++) {
-	//		s.pixels[i] = s.pixels[i] & 0xFFFF0000;
-	//	}
-	//}
+	for (Particle& p : particles) {
 
-	//s.CopyTo(screen, 0, 0);
+		screen->Plot(p.x, p.y, p.clr);
 
-	// Intermediate assignment
-	//Surface s("assets/nc2tiles.png");
-
-	//for (int i = 0, y = 0; y < s.height; y++) {
-	//	for (int x = 0; x < s.width; x++, i++) {
-	//		int color = i % 3;
-
-	//		switch (color) {
-	//			case 0:
-	//				s.pixels[i] = s.pixels[i] & 0xFFFF0000;
-	//				break;
-	//			case 1:
-	//				s.pixels[i] = s.pixels[i] & 0xFF00FF00;
-	//				break;
-	//			case 2:
-	//				s.pixels[i] = s.pixels[i] & 0xFF0000FF;
-	//				break;
-
-	//		}
-	//	}
-	//}
-
-	//s.CopyTo(screen, 0, 0);
-
-	// Hard assignment
-
-	Surface s("assets/nc2tiles.png");
-	Surface s2("assets/ball.png");
-
-	for (int i = 0, y = 0; y < s.height; y++) {
-		for (int x = 0; x < s.width; x++, i++) {
-		
-			uint p = s.pixels[i];
-		
-			uint r = ((p >> 16) & 0xFF) * brightness;
-			uint g = ((p >> 8) & 0xFF) * brightness;
-			uint b = ((p) & 0xFF) * brightness;
-		
-			s.pixels[i] = 0xFF000000 | r << 16 | g << 8 | b;
-		}
-	}
-		
-	s.CopyTo(screen, 0, 0);
-	
-	for (int i = 0, y = 0; y < s2.height; y++) {
-		for (int x = 0; x < s2.width; x++, i++) {
-
-			uint p = s2.pixels[i];
-
-			uint r = ((p >> 16) & 0xFF) * brightness2;
-			uint g = ((p >> 8) & 0xFF) * brightness2;
-			uint b = ((p) & 0xFF) * brightness2;
-
-			s2.pixels[i] = 0xFF000000 | r << 16 | g << 8 | b;
-		}
 	}
 
-	s2.CopyTo(screen, 0, 0);
+	for (Particle& p : particles)
+{
+    if (!p.alive) continue;
 
-		
-	brightness += 0.01f * dir;
-	brightness2 -= 0.01f * dir;
-		
-	if (brightness >= 1.f || brightness <= 0.005f) {
-		dir *= -1.f;
-	}
+    // Blue behaviour
+    if (p.clr == 0xFF0000FF)
+    {
+        // Check if directly below is blue
+        bool blueBelow = false;
+
+        if (p.y + 1 < screen->height)
+        {
+            uint below = screen->pixels[(p.y + 1) * screen->width + p.x];
+            blueBelow = (below == 0xFF0000FF);
+        }
+
+        if (blueBelow)
+        {
+            // Try moving left or right
+            int direction = (rand() % 2 == 0) ? -1 : 1;
+            int newX = p.x + direction;
+
+            // Make sure we stay inside the screen
+            if (newX >= 0 && newX < screen->width)
+            {
+                uint sidePixel =
+                    screen->pixels[p.y * screen->width + newX];
+
+                // Move sideways if there isn't blue there
+                if (sidePixel != 0xFF0000FF)
+                {
+                    p.x = newX;
+                }
+            }
+        }
+        else
+        {
+            // Nothing blue below, so fall
+            p.y++;
+        }
+    }
+    else
+    {
+        // Red and green simply fall
+        if (p.y + 1 < screen->height)
+        {
+            uint below =
+                screen->pixels[(p.y + 1) * screen->width + p.x];
+
+            if (below != p.clr)
+            {
+                p.y++;
+            }
+            else
+            {
+                p.alive = false;
+            }
+        }
+    }
+
+    // Remove particles that reach the bottom
+    if (p.y >= screen->height - 1)
+    {
+        p.alive = false;
+    }
+}
 }
